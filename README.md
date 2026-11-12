@@ -16,7 +16,7 @@ Built for the **[PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com
 - 🌐 **Live app**: https://www.usekams.xyz
 - 🤖 **AI shopper**: https://www.usekams.xyz/shop
 - 🛍️ **Example stall**: https://www.usekams.xyz/s/mama-tolu-fabrics-beads
-- 🔌 **MCP endpoint**: `https://www.usekams.xyz/mcp`
+- 🔌 **MCP endpoint**: `https://www.usekams.xyz/mcp` · **MCP docs**: https://www.usekams.xyz/docs
 - 🎥 **Demo video**: https://youtu.be/0yZLBGHctXA
 - 🗺️ **Architecture**: [`docs/kams-architecture.png`](docs/kams-architecture.png)
 - 🧪 **Judges' sandbox login**: [Try it (judges)](#try-it-judges)
