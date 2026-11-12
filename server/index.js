@@ -67,6 +67,22 @@ app.post('/api/stores/:slug/photos', upload.single('photo'), wrap(async (req, re
   res.json({ product: publicProduct(product) });
 }));
 
+// Seller settings: name, location, tagline and the PayPal account that receives payouts.
+app.patch('/api/stores/:slug', (req, res) => {
+  const store = requireSeller(req, res); if (!store) return;
+  const patch = {};
+  for (const [k, max] of [['name', 60], ['location', 80], ['tagline', 140]]) {
+    if (typeof req.body?.[k] === 'string' && req.body[k].trim()) patch[k] = req.body[k].trim().slice(0, max);
+  }
+  if (typeof req.body?.paypal_email === 'string') {
+    const email = req.body.paypal_email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid PayPal email' });
+    patch.paypal_email = email || undefined;
+  }
+  const s = db.updateStore(store.slug, patch);
+  res.json({ store: { ...publicStore(s, req), paypal_email: s.paypal_email } });
+});
+
 app.get('/api/stores', (req, res) => res.json({ stores: db.listStores().filter((s) => s.live !== false).map((s) => ({ ...publicStore(s, req), products: db.listProducts(s.id).length })) }));
 
 app.get('/api/stores/:slug', (req, res) => {

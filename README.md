@@ -21,7 +21,10 @@ that only exist in a phone gallery.
 ## Demo
 
 - Live: `<RENDER_URL>` · Video: `<YOUTUBE_URL>`
-- Sandbox buyer for judges: `<SANDBOX_BUYER_EMAIL>` / `<SANDBOX_BUYER_PASSWORD>` (PayPal sandbox personal account. No real money moves.)
+- **Sandbox buyer for judges** (PayPal sandbox personal account, test money only):
+  - email: `sb-88lss53882238@personal.example.com`
+  - password: `W!7i]j@=`
+- Merchant: US sandbox business account `sb-ex5yx50636695@business.example.com` (owner of the PayPal REST app). Sellers can set their own PayPal email, and orders are routed to it with the Orders v2 `payee` field.
 
 ## How AI and PayPal work together
 
