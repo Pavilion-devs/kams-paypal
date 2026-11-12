@@ -192,7 +192,6 @@ cd web && pnpm dev
 
 ## Credits
 
-- The design system is adapted from [Spoke](https://usespoke.xyz), the author's earlier MIT-licensed project.
 - Product photos on the example stall come from Wikimedia Commons:
   - [Ankara fabrics](https://commons.wikimedia.org/wiki/File:Ankara_fabrics.jpg) by Lyndadelz, CC BY-SA 4.0
   - [Stack of Adire](https://commons.wikimedia.org/wiki/File:Stack_of_Adire_,_a_local_Fabric_from_Abeoukuta.JPG) by Olaniyan Olushola, CC BY-SA 4.0
