@@ -1,13 +1,49 @@
-# Kams: snap your goods, AI agents buy them with PayPal
+![Kams](docs/kams-thumbnail.png)
 
-> PayPal AI Hackathon 2026 · PayPal Orders v2 + Payments v2 · Claude Sonnet 4.6 on Amazon Bedrock · Model Context Protocol
+# Kams: Snap Your Goods, AI Agents Buy Them with PayPal
 
-**Live:** https://www.usekams.xyz · **Demo video:** https://youtu.be/0yZLBGHctXA · **Example stall:** https://www.usekams.xyz/s/mama-tolu-fabrics-beads
+> Hundreds of millions of people sell on WhatsApp, Instagram and market stalls with no website. As shopping moves to
+> AI assistants, these sellers become invisible. **Kams turns a few phone photos into a store that AI agents can
+> search and pay for with PayPal, in about a minute.** Claude writes the listings, every stall is a live **MCP
+> endpoint**, and every purchase is a real **PayPal Orders v2** checkout that a human approves.
 
-Hundreds of millions of people sell on WhatsApp, Instagram and market stalls with no website. As shopping moves to AI
-assistants, these sellers become invisible: an agent can't find, compare or pay for goods that only exist in a phone gallery.
+Built for the **[PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)**.
 
-**Kams turns a few phone photos into a store that AI agents can search and pay for with PayPal, in about a minute.**
+---
+
+## Live
+
+- 🌐 **Live app**: https://www.usekams.xyz
+- 🤖 **AI shopper**: https://www.usekams.xyz/shop
+- 🛍️ **Example stall**: https://www.usekams.xyz/s/mama-tolu-fabrics-beads
+- 🔌 **MCP endpoint**: `https://www.usekams.xyz/mcp`
+- 🎥 **Demo video**: https://youtu.be/0yZLBGHctXA
+- 🗺️ **Architecture**: [`docs/kams-architecture.png`](docs/kams-architecture.png)
+- 🧪 **Judges' sandbox login**: [Try it (judges)](#try-it-judges)
+
+**Built with:** PayPal Orders v2 + Payments v2 (sandbox) · Claude Sonnet 4.6 on Amazon Bedrock · Model Context
+Protocol · Next.js 16 · AG Grid · Node.js · Vercel + Docker
+
+---
+
+## Table of Contents
+
+- [What it does](#what-it-does)
+- [Try it (judges)](#try-it-judges)
+  - [Connect your own agent over MCP](#connect-your-own-agent-over-mcp)
+- [How AI and PayPal work together](#how-ai-and-paypal-work-together)
+- [How we used PayPal](#how-we-used-paypal)
+- [How we used AG Grid](#how-we-used-ag-grid)
+- [Screenshots](#screenshots)
+- [Architecture](#architecture)
+- [Run locally](#run-locally)
+- [AI tools used](#ai-tools-used)
+- [Credits](#credits)
+- [License](#license)
+
+---
+
+## What it does
 
 1. **Snap.** The seller uploads product photos, optionally with a note like "₦18,000 per 6 yards, 100% cotton".
 2. **Claude catalogs it.** Claude Sonnet 4.6 (vision, on Amazon Bedrock) writes the title, a fair USD price (converting
