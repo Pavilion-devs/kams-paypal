@@ -11,19 +11,20 @@ import { chat, notePaid } from './agent.js';
 import { syncOrder, orderView, buildTools } from './tools.js';
 import { MODEL_ID } from './bedrock.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.API_PORT || process.env.PORT || 3000;
 const UPLOADS = process.env.UPLOADS_DIR || path.resolve('uploads');
 fs.mkdirSync(UPLOADS, { recursive: true });
-const PUBLIC = path.resolve('public');
-
+// The Next.js app (web/) is the public front door and proxies /api, /mcp, /paypal and /uploads here.
+// WEB_ORIGIN is where PayPal should send buyers back to; behind the proxy we derive it from forwarded headers.
 const app = express();
 app.set('trust proxy', true);
 app.use(express.json({ limit: '2mb' }));
 
-const baseUrl = (req) => process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+const baseUrl = (req) =>
+  process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL ||
+  `${req.get('x-forwarded-proto')?.split(',')[0] || req.protocol}://${req.get('x-forwarded-host')?.split(',')[0] || process.env.WEB_HOST || req.get('host')}`;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const page = (file) => (req, res) => res.sendFile(path.join(PUBLIC, file));
 
 function requireSeller(req, res) {
   const store = db.getStore(req.params.slug);
@@ -39,15 +40,8 @@ const publicStore = (s, req) => ({
 });
 const publicProduct = (p) => ({ ...p, image_url: p.image ? `/uploads/${p.image}` : null });
 
-// ---------- pages ----------
-app.get('/', page('index.html'));
-app.get('/new', page('new.html'));
-app.get('/shop', page('shop.html'));
-app.get('/s/:slug', page('store.html'));
-app.get('/s/:slug/shop', page('shop.html'));
-app.get('/dashboard/:slug', page('dashboard.html'));
+// ---------- static uploads (pages live in the Next.js app) ----------
 app.use('/uploads', express.static(UPLOADS, { maxAge: '7d' }));
-app.use(express.static(PUBLIC));
 
 // ---------- store + catalog ----------
 app.post('/api/stores', wrap(async (req, res) => {
@@ -161,19 +155,18 @@ app.post('/api/shop/chat', wrap(async (req, res) => {
 
 // ---------- PayPal redirects + webhook ----------
 app.get('/paypal/return', wrap(async (req, res) => {
-  const o = await syncOrder(String(req.query.order));
-  const ok = o?.status === 'PAID';
-  res.type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${ok ? 'Payment complete' : 'Payment pending'}</title>
-<link rel="stylesheet" href="/styles.css"><body class="center-page"><div class="card done-card"><div class="done-icon">${ok ? '✓' : '…'}</div>
-<h1>${ok ? 'Payment complete' : 'Payment pending'}</h1><p>${ok ? `Paid $${o.total.toFixed(2)} with PayPal. The seller has been notified.` : 'We could not confirm the payment yet.'}</p>
-<p class="muted">You can close this tab and return to your shopping assistant.</p></div>
-<script>try{window.opener&&window.opener.postMessage({type:'snapstall-paid',order:${JSON.stringify(o?.id || '')}},'*')}catch(e){};setTimeout(()=>{try{window.close()}catch(e){}},2500)</script></body>`);
+  // Capture (idempotent), then hand the buyer to the Kams confirmation page in the web app.
+  const id = String(req.query.order);
+  const o = await syncOrder(id).catch(() => db.getOrder(id));
+  const status = o?.status === 'PAID' ? 'paid' : 'pending';
+  res.redirect(303, `${process.env.WEB_ORIGIN || ''}/checkout/done?order=${encodeURIComponent(id)}&status=${status}`);
 }));
 
 app.get('/paypal/cancel', (req, res) => {
-  const o = db.getOrder(String(req.query.order));
+  const id = String(req.query.order);
+  const o = db.getOrder(id);
   if (o && o.status === 'AWAITING_APPROVAL') db.updateOrder(o.id, { status: 'CANCELLED' });
-  res.type('html').send(`<!doctype html><meta charset="utf-8"><title>Checkout cancelled</title><link rel="stylesheet" href="/styles.css"><body class="center-page"><div class="card done-card"><h1>Checkout cancelled</h1><p>No money moved. You can close this tab.</p></div></body>`);
+  res.redirect(303, `${process.env.WEB_ORIGIN || ''}/checkout/done?order=${encodeURIComponent(id)}&status=cancelled`);
 });
 
 app.post('/paypal/webhook', wrap(async (req, res) => {
@@ -194,4 +187,4 @@ app.use((err, req, res, next) => {
   res.status(err.status && err.status < 500 ? err.status : 500).json({ error: err.message || 'Server error' });
 });
 
-app.listen(PORT, () => console.log(`Snapstall on http://localhost:${PORT} · model ${MODEL_ID}`));
+app.listen(PORT, () => console.log(`Kams API on http://localhost:${PORT} · model ${MODEL_ID}`));

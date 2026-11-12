@@ -1,10 +1,10 @@
-# Snapstall — any seller, buyable by AI shoppers in 60 seconds
+# Kams — any seller, buyable by AI shoppers in 60 seconds
 
 PayPal AI Hackathon 2026 entry. Submissions close **Thu 12 Nov 2026, 12:00 PM PT (9:00 PM WAT)**.
 
 ## The pitch
 Millions of informal sellers (Instagram, WhatsApp, market stalls) have no website, so AI shopping
-agents can never find or buy from them. Snapstall turns a handful of product photos into a priced
+agents can never find or buy from them. Kams turns a handful of product photos into a priced
 catalog, a public storefront, and a live **MCP storefront** with **PayPal checkout** built in.
 From that moment any AI assistant (Claude, ChatGPT, our built-in shopper) can discover and buy
 their goods, and the seller watches sales arrive on a dashboard.

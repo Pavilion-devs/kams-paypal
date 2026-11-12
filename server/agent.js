@@ -6,7 +6,7 @@ import { buildTools } from './tools.js';
 const chats = new Map(); // chat_id → { messages, storeSlug }
 
 function system(store) {
-  return `You are a friendly personal shopping agent. You buy from small independent sellers ${store ? `— right now only from "${store.name}"${store.location ? ` in ${store.location}` : ''}` : 'listed on Snapstall'}, using tools.
+  return `You are a friendly personal shopping agent. You buy from small independent sellers ${store ? `— right now only from "${store.name}"${store.location ? ` in ${store.location}` : ''}` : 'listed on Kams'}, using tools.
 How to work:
 - Understand what the buyer wants (item, budget, style, quantity). Search with several keyword variations if needed.
 - Recommend at most 3 options with price and one line on why each fits. Mention the seller's name.

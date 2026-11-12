@@ -49,9 +49,9 @@ export async function createOrder({ store, items, currency = 'USD', returnUrl, c
   const total = items.reduce((s, i) => s + Number(i.unit_amount) * i.quantity, 0);
   const purchaseUnit = {
     reference_id: referenceId,
-    description: `Order from ${store.name} via Snapstall`.slice(0, 127),
+    description: `Order from ${store.name} via Kams`.slice(0, 127),
     custom_id: referenceId,
-    soft_descriptor: 'SNAPSTALL',
+    soft_descriptor: 'KAMS',
     amount: {
       currency_code: currency,
       value: money(total),

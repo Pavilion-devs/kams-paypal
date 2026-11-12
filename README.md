@@ -1,4 +1,4 @@
-# Snapstall — snap your goods, AI shoppers buy them
+# Kams: snap your goods, AI shoppers buy them
 
 > PayPal AI Hackathon 2026 · PayPal Orders v2 + Payments + Claude on Amazon Bedrock + MCP
 
@@ -6,7 +6,7 @@ Hundreds of millions of people sell on WhatsApp, Instagram and market stalls wit
 moves to AI assistants, these sellers become invisible: an agent can't find, compare or pay for goods
 that only exist in a phone gallery.
 
-**Snapstall turns a few phone photos into a store that AI agents can search and pay for with PayPal, in about 60 seconds.**
+**Kams turns a few phone photos into a store that AI agents can search and pay for with PayPal, in about 60 seconds.**
 
 1. **Snap**: the seller uploads product photos, optionally with a note ("₦25,000, 35 cm, handmade raffia").
 2. **Claude catalogs it**: Claude Sonnet 4.6 (vision, on Amazon Bedrock) writes the title and a fair USD
@@ -15,7 +15,7 @@ that only exist in a phone gallery.
 3. **Agent-ready instantly**: every stall gets a human storefront **and a live MCP endpoint**
    (`/mcp/<stall>`, plus `/mcp` across all stalls). Claude, ChatGPT, Cursor or any MCP client can connect.
 4. **Paid with PayPal**: agents call `create_order`, which creates an itemized **PayPal Orders v2** order. The human
-   buyer approves in PayPal (they stay in control of their money). Snapstall then captures it, and the seller
+   buyer approves in PayPal (they stay in control of their money). Kams then captures it, and the seller
    sees it live on their dashboard with PayPal fees and net payout, plus one-click **refunds** through the PayPal Payments v2 API.
 
 ## Demo
@@ -40,7 +40,7 @@ same tool definitions the MCP server exposes. What judges see in the demo is the
 
 Claude Code:
 ```bash
-claude mcp add --transport http snapstall https://<RENDER_URL>/mcp
+claude mcp add --transport http kams https://<RENDER_URL>/mcp
 ```
 Claude Desktop / any client that supports remote MCP: add `https://<RENDER_URL>/mcp` (all stalls) or
 `https://<RENDER_URL>/mcp/<stall-slug>` (one stall). Then ask: *"Find me a handwoven basket under $40 and buy it."*
@@ -51,9 +51,17 @@ Requires Node 20+, a [PayPal sandbox app](https://developer.paypal.com/dashboard
 [Amazon Bedrock API key](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html) with access to Claude Sonnet 4.6.
 
 ```bash
-npm install
-cp .env.example .env   # fill in your keys
-npm run dev            # http://localhost:3000
+npm install                     # API dependencies
+cd web && pnpm install && cd .. # web app (Next.js 16, pnpm)
+cp .env.example .env            # fill in your keys
+
+# terminal 1: API (PayPal, Bedrock, MCP) on :3000
+WEB_ORIGIN=http://localhost:3040 npm run dev:api
+# terminal 2: web app on :3040 (proxies /api, /mcp, /paypal, /uploads to the API)
+cd web && pnpm dev
+
+# production (what Render runs): one public port, API on an internal port
+npm run build && npm start
 ```
 
 | Variable | Purpose |
@@ -82,7 +90,8 @@ human storefront ──► /api/stores/:slug/checkout ────────�
 - `server/catalog.js`: photo → listing
 - `server/agent.js`: shopper agent loop
 - `server/mcp.js`: MCP server
-- `public/`: storefront, onboarding, AI shopper chat and seller dashboard (AG Grid)
+- `web/`: Next.js 16 + Tailwind 4 app with the landing page, onboarding, storefront, AI shopper chat and seller dashboard (AG Grid orders table). The design system is adapted from [Spoke](https://usespoke.xyz), the author's earlier MIT project.
+- `scripts/start.js`: production entry that runs the API internally and Next.js on `$PORT`
 
 ## AI tools used
 

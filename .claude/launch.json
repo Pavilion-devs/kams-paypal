@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kams-web",
+      "runtimeExecutable": "/Users/olathepavilion/.nvm/versions/node/v22.23.1/bin/node",
+      "runtimeArgs": ["web/node_modules/next/dist/bin/next", "dev", "web", "--port", "3040"],
+      "port": 3040
+    },
+    {
+      "name": "kams-api",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": ["WEB_ORIGIN=http://localhost:3040", "WEB_HOST=localhost:3040", "node", "--env-file=.env", "server/index.js"],
+      "port": 3000
+    }
+  ]
+}

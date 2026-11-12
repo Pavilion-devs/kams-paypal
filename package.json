@@ -1,11 +1,10 @@
 {
-  "name": "snapstall",
+  "name": "kams",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server/index.js",
-    "dev": "node --watch --env-file=.env server/index.js"
+    "start": "node scripts/start.js",
+    "build": "cd web && npx --yes pnpm@10.32.1 install --frozen-lockfile && npx --yes pnpm@10.32.1 build",
+    "dev:api": "node --watch --env-file=.env server/index.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +18,6 @@
     "zod": "^4.6.7"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.9"
   }
 }

@@ -4,3 +4,6 @@ data/
 uploads/
 .DS_Store
 2026-11-12-*.txt
+web/.next/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo

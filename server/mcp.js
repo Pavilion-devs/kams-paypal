@@ -7,11 +7,11 @@ import { db } from './db.js';
 
 function buildServer(store, baseUrl) {
   const server = new McpServer(
-    { name: store ? `snapstall-${store.slug}` : 'snapstall', version: '1.0.0' },
+    { name: store ? `kams-${store.slug}` : 'kams', version: '1.0.0' },
     {
       instructions: store
-        ? `You are connected to ${store.name}${store.location ? ` (${store.location})` : ''}, an independent seller on Snapstall. Search the catalog, then create a PayPal checkout for the buyer. Never claim an order is paid until get_order_status says paid=true.`
-        : 'Snapstall lets you discover and buy from small independent sellers who have no website. Search products, then create a PayPal checkout. Never claim an order is paid until get_order_status says paid=true.',
+        ? `You are connected to ${store.name}${store.location ? ` (${store.location})` : ''}, an independent seller on Kams. Search the catalog, then create a PayPal checkout for the buyer. Never claim an order is paid until get_order_status says paid=true.`
+        : 'Kams lets you discover and buy from small independent sellers who have no website. Search products, then create a PayPal checkout. Never claim an order is paid until get_order_status says paid=true.',
     },
   );
   for (const t of buildTools({ store, baseUrl, channel: 'mcp' })) {

@@ -41,7 +41,7 @@ const STOP = new Set(['a', 'an', 'the', 'for', 'me', 'my', 'i', 'want', 'need', 
 export function buildTools(ctx) {
   // ctx: { store (optional scope), baseUrl, channel }
   const scopeId = ctx.store?.id;
-  const where = ctx.store ? `from ${ctx.store.name}` : 'from independent sellers on Snapstall';
+  const where = ctx.store ? `from ${ctx.store.name}` : 'from independent sellers on Kams';
 
   const tools = [
     {
@@ -128,7 +128,7 @@ export function buildTools(ctx) {
   if (!ctx.store) {
     tools.push({
       name: 'list_stores',
-      description: 'List the independent sellers on Snapstall with their location and number of products.',
+      description: 'List the independent sellers on Kams with their location and number of products.',
       shape: {},
       handler: async () => ({
         stores: db.listStores().filter((s) => s.live !== false).map((s) => ({
