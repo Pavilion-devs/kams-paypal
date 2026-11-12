@@ -37,12 +37,12 @@ their goods, and the seller watches sales arrive on a dashboard.
 - **Deploy**: Render (live URL for judges).
 
 ## Build order (never cut the core: photo → store → agent purchase)
-1. [ ] Scaffold, env, PayPal client: create + capture one sandbox order end to end.
-2. [ ] Photo → catalog via Bedrock vision; store + storefront page.
-3. [ ] Shared tools module + MCP server per store.
-4. [ ] AI shopper chat (Bedrock tool loop) that returns the PayPal approve link.
-5. [ ] Seller dashboard + refunds.
-6. [ ] Seed demo store, README, MIT license, AI-tools statement.
+1. [x] Scaffold, env, PayPal client: create + capture one sandbox order end to end.
+2. [x] Photo → catalog via Bedrock vision; store + storefront page.
+3. [x] Shared tools module + MCP server per store.
+4. [x] AI shopper chat (Bedrock tool loop) that returns the PayPal approve link.
+5. [x] Seller dashboard + refunds.
+6. [~] README, MIT license, AI-tools statement done · seed demo store with real photos pending
 7. [ ] Deploy to Render, GitHub public repo, record video, submit on Devpost.
 
 Cut list if we slip: refunds → dashboard polish → webhook. Never cut the core flow.
