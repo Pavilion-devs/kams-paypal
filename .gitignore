@@ -9,3 +9,4 @@ web/next-env.d.ts
 web/tsconfig.tsbuildinfo
 .vercel
 .env*.local
+video/

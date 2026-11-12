@@ -32,7 +32,11 @@ export async function chat({ chatId, message, store, baseUrl }) {
     state.messages.push(msg);
     const uses = msg.content.filter((c) => c.toolUse).map((c) => c.toolUse);
     if (res.stopReason !== 'tool_use' || !uses.length) {
-      const reply = msg.content.filter((c) => c.text).map((c) => c.text).join('\n').trim();
+      // The app renders the PayPal button itself: drop any markup or checkout link the model echoes.
+      const reply = msg.content.filter((c) => c.text).map((c) => c.text).join('\n')
+        .replace(/<\/?paypal-button[^>]*>/gi, '')
+        .replace(/\(?https?:\/\/(www\.)?sandbox\.paypal\.com\/\S+/gi, '')
+        .replace(/\n{3,}/g, '\n\n').trim();
       return { chat_id: id, reply, trace, checkout, products };
     }
     const results = [];

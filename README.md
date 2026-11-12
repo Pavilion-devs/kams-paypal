@@ -2,7 +2,7 @@
 
 > PayPal AI Hackathon 2026 · PayPal Orders v2 + Payments v2 · Claude Sonnet 4.6 on Amazon Bedrock · Model Context Protocol
 
-**Live:** https://www.usekams.xyz · **Demo video:** `<YOUTUBE_URL>` · **Example stall:** https://www.usekams.xyz/s/mama-tolu-fabrics-beads
+**Live:** https://www.usekams.xyz · **Demo video:** https://youtu.be/0yZLBGHctXA · **Example stall:** https://www.usekams.xyz/s/mama-tolu-fabrics-beads
 
 Hundreds of millions of people sell on WhatsApp, Instagram and market stalls with no website. As shopping moves to AI
 assistants, these sellers become invisible: an agent can't find, compare or pay for goods that only exist in a phone gallery.
