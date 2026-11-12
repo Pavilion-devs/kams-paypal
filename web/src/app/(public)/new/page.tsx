@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { StatusChip } from "@/components/ui/status-chip";
 import { api, money, rememberKey, type Product, type Store } from "@/lib/api";
 import { routes } from "@/lib/routes";
+import { shrinkImage } from "@/lib/shrink-image";
 import { toast } from "@/lib/toast";
 
 type Job = { id: number; file: File; preview: string; note: string; state: "queued" | "working" | "done" | "error"; product?: Product; error?: string };
@@ -55,10 +56,13 @@ export default function NewStallPage() {
       const job = queue.current.shift()!;
       active.current++;
       update(job.id, { state: "working" });
-      const fd = new FormData();
-      fd.append("photo", job.file);
-      fd.append("note", job.note);
-      api<{ product: Product }>(`/api/stores/${store.slug}/photos`, { method: "POST", body: fd, sellerKey: key })
+      shrinkImage(job.file)
+        .then((file) => {
+          const fd = new FormData();
+          fd.append("photo", file);
+          fd.append("note", job.note);
+          return api<{ product: Product }>(`/api/stores/${store.slug}/photos`, { method: "POST", body: fd, sellerKey: key });
+        })
         .then((r) => update(job.id, { state: "done", product: r.product }))
         .catch((e: Error) => update(job.id, { state: "error", error: e.message }))
         .finally(() => {
