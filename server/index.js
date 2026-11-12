@@ -21,7 +21,7 @@ app.set('trust proxy', true);
 app.use(express.json({ limit: '2mb' }));
 
 const baseUrl = (req) =>
-  process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL ||
+  process.env.BASE_URL ||
   `${req.get('x-forwarded-proto')?.split(',')[0] || req.protocol}://${req.get('x-forwarded-host')?.split(',')[0] || process.env.WEB_HOST || req.get('host')}`;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
