@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Shopper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="nav"></div>
+<main class="wrap shop-layout">
+  <section class="chat">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--line)" class="row">
+      <div><b id="title">AI shopping agent</b><div class="muted small" id="subtitle">Shops independent sellers and pays with PayPal</div></div>
+      <span class="spacer"></span><span class="pill ok"><span class="dot"></span>Claude Sonnet 4.6 · Bedrock</span>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="chips" id="chips"></div>
+    <form class="composer" id="form">
+      <input id="input" autocomplete="off" placeholder="What are you looking for?" aria-label="Message">
+      <button class="btn primary" id="send">Send</button>
+    </form>
+  </section>
+  <aside class="side stack">
+    <div class="card">
+      <h3>What the agent is doing</h3>
+      <p class="muted small">It uses the same MCP tools any AI assistant gets: <code>search_products</code>, <code>get_product</code>, <code>create_order</code>, <code>get_order_status</code>. Orders are real PayPal Orders v2 objects in the sandbox.</p>
+      <ul class="feed" id="calls"><li class="muted">No tool calls yet.</li></ul>
+    </div>
+    <div class="card">
+      <h3>Bring your own agent</h3>
+      <p class="muted small">Add this MCP server to Claude, ChatGPT or Cursor and it can shop here too:</p>
+      <div class="copybox"><code id="mcp"></code><button class="btn sm" id="copyMcp">Copy</button></div>
+    </div>
+    <div class="card small muted">Sandbox only: approve with a PayPal <b>sandbox personal</b> account. No real money moves.</div>
+  </aside>
+</main>
+<script type="module">
+import { $, api, esc, money, nav, toast, copy, paypalButton } from '/app.js';
+$('#nav').innerHTML = nav('shop');
+const parts = location.pathname.split('/');
+const slug = parts[1] === 's' ? parts[2] : null;
+let chatId = null, store = null, busy = false;
+const mcpUrl = `${location.origin}/mcp${slug ? '/' + slug : ''}`;
+$('#mcp').textContent = mcpUrl; $('#copyMcp').onclick = () => copy(mcpUrl);
+
+if (slug) {
+  ({ store } = await api(`/api/stores/${slug}`));
+  $('#title').textContent = `Shopping ${store.name}`;
+  $('#subtitle').textContent = [store.location, 'agent buys for you, you approve in PayPal'].filter(Boolean).join(' · ');
+  document.title = `AI Shopper · ${store.name}`;
+}
+bot(slug ? `Hi! I can shop ${store.name} for you. Tell me what you need and your budget, and I'll find it and set up PayPal checkout.` : `Hi! I shop small independent sellers that have no website. Tell me what you're after and your budget.`);
+const suggestions = slug ? ['What do you have under $30?', 'Find me a gift for my mum', 'Buy your best-selling item'] : ['Find me a handwoven basket under $40', 'What stalls can you shop?', 'A unique gift under $25'];
+$('#chips').innerHTML = suggestions.map((s) => `<button class="chip">${esc(s)}</button>`).join('');
+$('#chips').addEventListener('click', (e) => { if (e.target.matches('.chip')) send(e.target.textContent); });
+$('#form').addEventListener('submit', (e) => { e.preventDefault(); send($('#input').value); });
+
+function add(html, cls) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; $('#msgs').appendChild(d); $('#msgs').scrollTop = 1e9; return d; }
+const md = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\s)\*(\S[^*]*?)\*(?=\s|$|[.,!?])/g, '$1<i>$2</i>');
+function bot(text) { return add(md(text), 'msg bot'); }
+
+async function send(text) {
+  text = text.trim(); if (!text || busy) return;
+  busy = true; $('#input').value = ''; $('#chips').hidden = true; $('#send').disabled = true;
+  add(esc(text), 'msg user');
+  const typing = add('Agent is working<span>…</span>', 'typing');
+  try {
+    const r = await api('/api/shop/chat', { method: 'POST', json: { message: text, chat_id: chatId, store_slug: slug } });
+    chatId = r.chat_id; typing.remove();
+    if (r.trace.length) {
+      add(r.trace.map((t) => `<span class="pill ${t.ok ? '' : 'warn'}">⚙ ${esc(t.tool)} · ${esc(t.summary)}</span>`).join(''), 'trace');
+      logCalls(r.trace);
+    }
+    const shown = r.checkout ? r.checkout.items.map((i) => i.product_id) : null;
+    const prods = shown ? r.products.filter((p) => shown.includes(p.product_id)) : r.products;
+    if (r.reply) bot(r.reply);
+    if (prods.length && !r.checkout && r.trace.some((t) => t.tool === 'search_products')) {
+      add(prods.slice(0, 6).map((p) => `<a class="mini" href="${esc(p.product_url)}" target="_blank"><div class="img" style="background-image:url(${esc(p.image_url)})"></div><div class="t">${esc(p.title)}</div><div class="p">${money(p.price.value)} · ${esc(p.store?.name || '')}</div></a>`).join(''), 'mini-products');
+    }
+    if (r.checkout) checkoutCard(r.checkout, prods);
+  } catch (err) { typing.remove(); bot(`Something went wrong: ${err.message}`); }
+  busy = false; $('#send').disabled = false; $('#input').focus();
+}
+
+function logCalls(trace) {
+  const ul = $('#calls'); if (ul.querySelector('.muted')) ul.innerHTML = '';
+  for (const t of trace) {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="ic">${t.tool === 'create_order' ? '💳' : t.tool === 'get_order_status' ? '✅' : '🔎'}</span><div><b class="mono">${esc(t.tool)}</b><div class="muted mono" style="font-size:11px">${esc(JSON.stringify(t.input))}</div><div>${esc(t.summary)}</div></div>`;
+    ul.prepend(li);
+  }
+}
+
+function checkoutCard(c, prods) {
+  const img = prods[0]?.image_url;
+  const el = add(`
+    <div class="row" style="gap:12px;align-items:flex-start">
+      ${img ? `<div class="thumb" style="background-image:url(${esc(img)})"></div>` : ''}
+      <div style="flex:1"><div class="small muted">PayPal checkout · ${esc(c.store)}</div>
+      ${c.items.map((i) => `<div><b>${esc(i.title)}</b> × ${i.quantity}</div>`).join('')}
+      <div class="price" style="font-family:var(--display);font-size:22px;font-weight:600">${money(c.total.value)}</div></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn paypal" data-pay>${paypalButton('Approve with')}</button><span class="small muted" data-st>Waiting for your approval</span></div>`, 'checkout');
+  el.querySelector('[data-pay]').onclick = () => {
+    const w = window.open(c.url, 'paypal', 'width=480,height=720');
+    if (!w) location.href = c.url;
+    poll(c.order_id, el);
+  };
+}
+
+async function poll(orderId, el) {
+  if (el.dataset.polling) return; el.dataset.polling = '1';
+  const st = el.querySelector('[data-st]'); st.textContent = 'Waiting for PayPal…';
+  for (let i = 0; i < 150; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const o = await api(`/api/orders/${orderId}?chat=${chatId}`);
+      if (o.paid) {
+        el.classList.add('paid');
+        el.querySelector('[data-pay]').outerHTML = `<span class="pill ok">✓ Paid with PayPal</span>`;
+        st.innerHTML = `capture <span class="mono">${esc(o.capture_id)}</span>`;
+        logCalls([{ tool: 'get_order_status', input: { order_id: orderId }, ok: true, summary: 'Paid ✓ captured' }]);
+        bot(`Payment confirmed: ${money(o.total.value)} captured by PayPal. The seller has your order and will ship it to your PayPal address. Anything else?`);
+        return;
+      }
+      if (o.status === 'CANCELLED') { st.textContent = 'Checkout cancelled'; return; }
+    } catch {}
+  }
+}
+window.addEventListener('message', (e) => { if (e.data?.type === 'snapstall-paid') toast('PayPal approved, confirming…'); });
+</script>
+</body>
+</html>

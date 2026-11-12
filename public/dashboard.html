@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seller dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<style>
+  #ordersGrid { height: 360px; }
+  .ag-theme-quartz, .ag-theme-quartz-dark { --ag-font-family: var(--font); --ag-background-color: var(--surface); --ag-header-background-color: var(--surface-2); --ag-border-color: var(--line); --ag-foreground-color: var(--text); --ag-active-color: var(--accent); --ag-odd-row-background-color: var(--surface); --ag-wrapper-border-radius: 12px; }
+</style>
+</head>
+<body>
+<div id="nav"></div>
+<main class="wrap" style="padding-top:28px;padding-bottom:40px">
+  <div id="locked" class="card empty" hidden>This dashboard needs the private seller link you got when you opened the stall.</div>
+  <div id="app" hidden>
+    <div class="row" style="align-items:flex-end">
+      <div><div class="muted small">Seller dashboard</div><h1 id="name" style="margin:0;font-size:36px">…</h1></div>
+      <span class="spacer"></span>
+      <span class="pill ok"><span class="dot live-dot"></span>Live to AI agents</span>
+      <a class="btn sm" id="storeLink" target="_blank">View storefront</a>
+      <a class="btn sm primary" id="addLink">+ Add products</a>
+    </div>
+
+    <div class="stats" style="margin-top:20px">
+      <div class="card stat"><div class="k">Revenue (gross)</div><div class="v" id="sRev">$0</div></div>
+      <div class="card stat"><div class="k">You keep (after PayPal fees)</div><div class="v" id="sNet">$0</div></div>
+      <div class="card stat"><div class="k">Paid orders · via AI agents</div><div class="v" id="sOrders">0</div></div>
+      <div class="card stat"><div class="k">AI agent visits</div><div class="v" id="sVisits">0</div></div>
+    </div>
+
+    <div class="dash">
+      <div class="stack">
+        <div class="card">
+          <div class="row"><h3 style="margin:0">Orders</h3><span class="spacer"></span><span class="muted small">Paid with PayPal · refunds go straight back to the buyer</span></div>
+          <div id="ordersGrid" style="margin-top:14px"></div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0">Products</h3><span class="spacer"></span><span class="muted small">Edit a price and agents see it instantly</span></div>
+          <div class="table-wrap" style="margin-top:8px"><table><thead><tr><th></th><th>Product</th><th>Price</th><th>In stock</th><th></th></tr></thead><tbody id="products"></tbody></table></div>
+        </div>
+      </div>
+      <aside class="stack">
+        <div class="card">
+          <h3>Live activity</h3>
+          <ul class="feed" id="feed"></ul>
+        </div>
+        <div class="card">
+          <h3>Your agent endpoint</h3>
+          <p class="muted small">Any AI assistant that speaks MCP can shop your stall here.</p>
+          <div class="copybox"><code id="mcp"></code><button class="btn sm" id="copyMcp">Copy</button></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+<script type="module">
+import { $, api, esc, money, nav, toast, copy, sellerKey, timeAgo } from '/app.js';
+$('#nav').innerHTML = nav();
+const slug = location.pathname.split('/')[2];
+const key = sellerKey(slug);
+const H = { 'x-seller-key': key };
+if (key && new URLSearchParams(location.search).has('key')) history.replaceState(null, '', location.pathname);
+
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+const gridEl = $('#ordersGrid'); gridEl.className = dark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz';
+const STATUS = { PAID: 'ok', REFUNDED: '', AWAITING_APPROVAL: 'warn', CANCELLED: '', CREATED: 'warn' };
+const CHANNEL = { 'ai-shopper': '✨ AI shopper', mcp: '🤖 External agent (MCP)', storefront: '🛍 Storefront' };
+let seenPaid = null;
+
+const grid = agGrid.createGrid(gridEl, {
+  rowData: [],
+  getRowId: (p) => p.data.id,
+  defaultColDef: { sortable: true, resizable: true },
+  columnDefs: [
+    { headerName: 'When', field: 'created_at', width: 110, valueFormatter: (p) => timeAgo(p.value), sort: 'desc' },
+    { headerName: 'Items', flex: 2, minWidth: 180, valueGetter: (p) => p.data.items.map((i) => `${i.title}${i.quantity > 1 ? ' ×' + i.quantity : ''}`).join(', '), tooltipValueGetter: (p) => p.value },
+    { headerName: 'Total', field: 'total', width: 95, valueFormatter: (p) => money(p.value) },
+    { headerName: 'Channel', field: 'channel', width: 190, valueFormatter: (p) => CHANNEL[p.value] || p.value },
+    { headerName: 'Buyer', flex: 1, minWidth: 130, valueGetter: (p) => p.data.payer_name || p.data.payer_email || '—' },
+    { headerName: 'Status', field: 'status', width: 150, cellRenderer: (p) => `<span class="pill ${STATUS[p.value] ?? ''}">${esc(p.value.replace('_', ' ').toLowerCase())}</span>` },
+    { headerName: '', width: 110, sortable: false, cellRenderer: (p) => {
+      if (p.data.status !== 'PAID') return '';
+      const b = document.createElement('button'); b.className = 'btn sm danger'; b.textContent = 'Refund';
+      b.onclick = async () => {
+        if (!confirm(`Refund ${money(p.data.total)} to the buyer through PayPal?`)) return;
+        b.disabled = true; b.textContent = 'Refunding…';
+        try { await api(`/api/stores/${slug}/orders/${p.data.id}/refund`, { method: 'POST', headers: H, json: { reason: 'Refund from seller' } }); toast('Refunded through PayPal'); load(); }
+        catch (err) { toast(err.message); b.disabled = false; b.textContent = 'Refund'; }
+      };
+      return b;
+    } },
+  ],
+  overlayNoRowsTemplate: '<span class="muted">No orders yet. Share your MCP link or try the AI shopper.</span>',
+});
+
+const ICON = { search: '🔎', view: '👀', mcp: '🤖', order_created: '🧾', paid: '💰', refunded: '↩️', listed: '📷' };
+function describe(e) {
+  const d = e.detail || {}; const via = CHANNEL[d.channel] ? ` · ${CHANNEL[d.channel]}` : '';
+  switch (e.type) {
+    case 'search': return `An agent searched “${esc(d.query)}”${d.max_price ? ` under ${money(d.max_price)}` : ''} (${d.results} match)${via}`;
+    case 'view': return `Agent looked at <b>${esc(d.product)}</b>${via}`;
+    case 'mcp': return `MCP client connected <span class="mono">${esc(d.method || '')}</span>`;
+    case 'order_created': return `Checkout created for <b>${money(d.total)}</b>${via}`;
+    case 'paid': return `<b>${money(d.total)} paid</b> with PayPal${d.payer ? ` by ${esc(d.payer)}` : ''}${via}`;
+    case 'refunded': return `Refunded ${money(d.total)}`;
+    case 'listed': return `Listed <b>${esc(d.product)}</b> at ${money(d.price)}`;
+    default: return esc(e.type);
+  }
+}
+
+async function load() {
+  let d;
+  try { d = await api(`/api/stores/${slug}/dashboard`, { headers: H }); }
+  catch (err) { $('#locked').hidden = false; $('#app').hidden = true; return false; }
+  $('#app').hidden = false;
+  document.title = `${d.store.name} · Dashboard`;
+  $('#name').textContent = d.store.name;
+  $('#storeLink').href = d.store.url;
+  $('#addLink').href = `/new?store=${slug}`;
+  $('#mcp').textContent = d.store.mcp_url; $('#copyMcp').onclick = () => copy(d.store.mcp_url);
+  $('#sRev').textContent = money(d.stats.revenue);
+  $('#sNet').textContent = money(d.stats.net);
+  $('#sOrders').textContent = `${d.stats.paid_orders} · ${d.stats.agent_orders}`;
+  $('#sVisits').textContent = d.stats.agent_visits;
+  grid.setGridOption('rowData', d.orders);
+  const paidIds = d.orders.filter((o) => o.status === 'PAID').map((o) => o.id);
+  if (seenPaid) for (const id of paidIds) if (!seenPaid.has(id)) { toast('💰 New PayPal payment!'); grid.flashCells({ rowNodes: [grid.getRowNode(id)] }); }
+  seenPaid = new Set(paidIds);
+  $('#feed').innerHTML = d.events.map((e) => `<li><span class="ic">${ICON[e.type] || '•'}</span><div>${describe(e)}<br><time>${timeAgo(e.at)}</time></div></li>`).join('') || '<li class="muted">Nothing yet.</li>';
+  if (!document.activeElement?.closest('#products')) renderProducts(d.products);
+  return true;
+}
+
+function renderProducts(products) {
+  $('#products').innerHTML = products.map((p) => `<tr data-id="${p.id}">
+    <td><div class="thumb" style="background-image:url(${esc(p.image_url)})"></div></td>
+    <td><b>${esc(p.title)}</b><div class="muted small">${esc(p.category || '')}</div></td>
+    <td><input class="price-input" type="number" min="1" step="0.5" value="${p.price_usd}" data-f="price_usd"></td>
+    <td><input type="checkbox" ${p.in_stock !== false ? 'checked' : ''} data-f="in_stock" style="width:auto"></td>
+    <td><button class="btn sm danger" data-del>Remove</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty">No products.</td></tr>';
+}
+
+$('#products').addEventListener('change', async (e) => {
+  const id = e.target.closest('tr').dataset.id, f = e.target.dataset.f;
+  const val = f === 'in_stock' ? e.target.checked : Number(e.target.value);
+  try { await api(`/api/stores/${slug}/products/${id}`, { method: 'PATCH', headers: H, json: { [f]: val } }); toast('Saved'); e.target.blur(); }
+  catch (err) { toast(err.message); }
+});
+$('#products').addEventListener('click', async (e) => {
+  if (!e.target.matches('[data-del]')) return;
+  const id = e.target.closest('tr').dataset.id;
+  if (!confirm('Remove this product from your stall?')) return;
+  await api(`/api/stores/${slug}/products/${id}`, { method: 'DELETE', headers: H }); load();
+});
+
+if (!key || !(await load())) { $('#locked').hidden = false; }
+else setInterval(load, 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Snapstall</title>
+<meta name="description" content="Snap photos of what you sell. Get a store that AI shopping agents can find and pay for with PayPal.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="nav"></div>
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <span class="pill accent"><span class="dot"></span> Agentic commerce for the next billion sellers</span>
+      <h1 style="margin-top:14px">Snap your goods.<br><em>AI shoppers</em> buy them.</h1>
+      <p class="lead">Hundreds of millions of people sell on WhatsApp, Instagram and market stalls with no website, so AI shopping assistants can't find them. Snapstall turns a few phone photos into a store that AI agents can search and pay for with PayPal, in about 60 seconds.</p>
+      <div class="row" style="margin-top:22px">
+        <a class="btn primary lg" href="/new">Open your stall, free</a>
+        <a class="btn lg" href="/shop">Try the AI shopper</a>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><span class="n">1</span><div><b>Snap</b><div class="muted small">Upload phone photos. Add a note like "₦25,000, 35cm" if you want.</div></div></div>
+      <div class="flow-step"><span class="n">2</span><div><b>Claude catalogs it</b><div class="muted small">Title, fair USD price, attributes, and a factual description written for AI agents.</div></div></div>
+      <div class="flow-step"><span class="n">3</span><div><b>Agent-ready instantly</b><div class="muted small">Your stall gets a storefront and an MCP endpoint that Claude, ChatGPT or any agent can connect to.</div></div></div>
+      <div class="flow-step"><span class="n">4</span><div><b>Paid with PayPal</b><div class="muted small">Agents create PayPal orders, buyers approve, and money lands in your PayPal account. Refunds take one click.</div></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="row"><h2 style="margin:0">Live stalls</h2><span class="spacer"></span><span class="muted small">Connect any MCP client to <code id="mcp-all"></code></span></div>
+    <div id="stores" class="stores" style="margin-top:16px"><div class="empty">Loading…</div></div>
+  </section>
+</main>
+<footer><div class="wrap">Snapstall · PayPal Orders v2 + Claude on Amazon Bedrock · PayPal sandbox only, no real money moves.</div></footer>
+<script type="module">
+import { $, api, esc, nav } from '/app.js';
+$('#nav').innerHTML = nav();
+$('#mcp-all').textContent = `${location.origin}/mcp`;
+const { stores } = await api('/api/stores');
+$('#stores').innerHTML = stores.length ? stores.map((s) => `
+  <a class="card store-card" href="/s/${esc(s.slug)}">
+    <h3>${esc(s.name)}</h3>
+    <div class="muted small">${esc(s.location || '')}</div>
+    <p class="small" style="margin:8px 0">${esc(s.tagline || '')}</p>
+    <span class="pill">${s.products} products</span>
+  </a>`).join('') : '<div class="empty card">No stalls yet. <a href="/new">Open the first one</a>.</div>';
+</script>
+</body>
+</html>

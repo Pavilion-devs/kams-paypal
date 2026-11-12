@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="nav"></div>
+<main class="wrap" style="padding-top:28px;padding-bottom:40px">
+  <div class="row" style="align-items:flex-end">
+    <div>
+      <h1 id="name" style="margin:0">…</h1>
+      <div class="muted" id="meta"></div>
+    </div>
+    <span class="spacer"></span>
+    <a class="btn primary" id="askAi">✨ Let an AI shop this stall</a>
+  </div>
+  <div class="card row" style="margin:20px 0;padding:12px 16px;gap:10px">
+    <span class="pill ok"><span class="dot live-dot"></span>Agent-ready</span>
+    <span class="small muted">AI agents can buy here through MCP:</span>
+    <div class="copybox" style="flex:1;min-width:220px;padding:4px 4px 4px 12px"><code id="mcp"></code><button class="btn sm" id="copyMcp">Copy</button></div>
+  </div>
+  <div id="products" class="products"></div>
+</main>
+<script type="module">
+import { $, api, esc, money, nav, toast, copy, paypalButton } from '/app.js';
+$('#nav').innerHTML = nav();
+const slug = location.pathname.split('/')[2];
+const { store, products } = await api(`/api/stores/${slug}`);
+document.title = store.name;
+$('#name').textContent = store.name;
+$('#meta').textContent = [store.location, store.tagline].filter(Boolean).join(' · ');
+$('#mcp').textContent = store.mcp_url;
+$('#copyMcp').onclick = () => copy(store.mcp_url);
+$('#askAi').href = `/s/${slug}/shop`;
+$('#products').innerHTML = products.length ? products.map((p) => `
+  <div class="product ${p.in_stock === false ? 'oos' : ''}" id="${p.id}">
+    <div class="img" style="background-image:url(${esc(p.image_url)})"></div>
+    <div class="body">
+      <div class="title">${esc(p.title)}</div>
+      <div class="desc">${esc(p.description)}</div>
+      <span class="spacer"></span>
+      <div class="row"><span class="price">${money(p.price_usd)}</span><span class="spacer"></span>
+      ${p.in_stock === false ? '<span class="pill">Sold out</span>' : `<button class="btn paypal sm" data-buy="${p.id}">${paypalButton('Buy with')}</button>`}</div>
+    </div>
+  </div>`).join('') : '<div class="empty card">No products yet.</div>';
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-buy]'); if (!b) return;
+  b.disabled = true;
+  const win = window.open('about:blank', 'paypal', 'width=480,height=720');
+  try {
+    const o = await api(`/api/stores/${slug}/checkout`, { method: 'POST', json: { product_id: b.dataset.buy } });
+    if (win) win.location = o.checkout_url; else location = o.checkout_url;
+  } catch (err) { win?.close(); toast(err.message); }
+  b.disabled = false;
+});
+window.addEventListener('message', (e) => { if (e.data?.type === 'snapstall-paid') toast('Payment complete. Thank you!'); });
+</script>
+</body>
+</html>

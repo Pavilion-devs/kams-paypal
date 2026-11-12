@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: snapstall
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: AMAZON_BEDROCK_API_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: BEDROCK_MODEL_ID
+        value: us.anthropic.claude-sonnet-4-6

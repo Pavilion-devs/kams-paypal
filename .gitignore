@@ -1,0 +1,6 @@
+node_modules
+.env
+data/
+uploads/
+.DS_Store
+2026-11-12-*.txt
