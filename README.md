@@ -56,6 +56,42 @@ Any client that supports remote MCP (Streamable HTTP) can use `https://www.useka
 The **built-in AI shopper** (`/shop`, `/s/<stall>/shop`) is Claude running a tool-use loop over exactly the same tool
 definitions the MCP server exposes, so the demo follows the same path a third-party agent takes.
 
+## How we used PayPal
+
+Every payment in Kams is a real PayPal sandbox transaction, created and settled by server code (`server/paypal.js`). No AI model ever moves money.
+
+| PayPal API | Where it's used | What it does in Kams |
+|---|---|---|
+| **OAuth 2.0** (`/v1/oauth2/token`) | every call | Client-credentials token, cached until it expires |
+| **Orders v2 · create** (`POST /v2/checkout/orders`) | `create_order` tool (MCP, AI shopper, storefront) | CAPTURE intent, itemized lines (name, SKU, unit price from the catalogue), `reference_id` = Kams order, per-seller `payee`, `payer-action` approval link, `PayPal-Request-Id` idempotency |
+| **Orders v2 · get** (`GET /v2/checkout/orders/{id}`) | `get_order_status`, return URL, webhook | Reads the real order state, so Kams never trusts a redirect or a webhook body on its own |
+| **Orders v2 · capture** (`POST /v2/checkout/orders/{id}/capture`) | after the buyer approves | Captures once (`cap-<id>` idempotency key) across the return URL, agent polling and webhooks; stores the capture ID and payer |
+| **Payments v2 · refund** (`POST /v2/payments/captures/{id}/refund`) | seller dashboard | One-click refund to the buyer (`ref-<id>` idempotency key), seller key required |
+| **seller_receivable_breakdown** | seller dashboard | PayPal's fee and the seller's net payout per order |
+| **Webhooks** (`/paypal/webhook`) | order and capture events | Treated as a hint: Kams re-reads the order from PayPal, then updates the dashboard |
+
+The buyer always approves in PayPal (no card data touches Kams), and the agent only tells the buyer "paid" after PayPal reports the capture.
+
+## How we used AG Grid
+
+The seller's **Orders** page (`web/src/app/(app)/dashboard/[slug]/orders/page.tsx`) is built on **AG Grid** (`ag-grid-react` 32, Quartz theme restyled to the Kams design system):
+
+- One row per PayPal order: when, items, total, channel (AI shopper, external MCP agent or storefront), buyer and status.
+- **Custom cell renderers** show PayPal status as chips (Paid, Awaiting approval, Refunded); value formatters handle money and relative times.
+- **`getRowId`-keyed rows** update in place as captures and refunds land, without re-mounting the grid.
+- **Single-row selection** opens the order's PayPal details beside the grid: PayPal order ID, capture ID, buyer, ship-to, PayPal fee, the seller's net payout, the buyer's note, and a **Refund through PayPal** button.
+- Status tabs (All, Paid, Awaiting approval, Refunded) filter the grid, and columns are sortable and resizable.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Seller overview](docs/screenshots/0-seller-overview.png) | ![Claude lists a photo](docs/screenshots/1-claude-lists-a-photo.png) |
+| ![Storefront and MCP endpoint](docs/screenshots/2-storefront-and-mcp.png) | ![AI shopper creates a PayPal order](docs/screenshots/3-ai-shopper-creates-paypal-order.png) |
+| ![Paid and confirmed](docs/screenshots/5-paid-and-confirmed.png) | ![Orders in AG Grid with fee and payout](docs/screenshots/6-orders-ag-grid-fee-and-payout.png) |
+
+Architecture diagram: [docs/kams-architecture.png](docs/kams-architecture.png).
+
 ## Architecture
 
 ```
