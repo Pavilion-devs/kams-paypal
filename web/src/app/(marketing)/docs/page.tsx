@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 const MCP = "https://www.usekams.xyz/mcp";
 
 const tools = [
-  { name: "list_stores", args: "—", does: "Lists every live Kams stall with its name, location, tagline and product count." },
+  { name: "list_stores", args: "— (only on /mcp, the all-stalls endpoint)", does: "Lists every live Kams stall with its name, location, tagline and product count." },
   { name: "search_products", args: "query, max_price?, category?, limit?", does: "Finds products by keywords and budget. Returns titles, USD prices, tags and agent-facing descriptions." },
   { name: "get_product", args: "product_id", does: "Full details for one product, written for AI agents to read." },
   { name: "create_order", args: "items[{product_id, quantity}], note?", does: "Creates an itemized PayPal Orders v2 checkout (sandbox). Returns a checkout_url the human buyer opens to approve in PayPal. Prices always come from the catalogue." },
