@@ -34,21 +34,22 @@ export default function OrdersPage() {
 
   const columns = useMemo<ColDef<Order>[]>(
     () => [
-      { headerName: "When", field: "created_at", width: 110, sort: "desc", valueFormatter: (p) => timeAgo(p.value as string) },
+      { headerName: "When", field: "created_at", flex: 0.7, minWidth: 90, sort: "desc", valueFormatter: (p) => timeAgo(p.value as string) },
       {
         headerName: "Items",
-        flex: 2,
-        minWidth: 200,
+        flex: 1.8,
+        minWidth: 150,
         valueGetter: (p) => p.data?.items.map((i) => (i.quantity > 1 ? `${i.title} ×${i.quantity}` : i.title)).join(", "),
         tooltipValueGetter: (p) => p.value as string,
       },
-      { headerName: "Total", field: "total", width: 100, type: "rightAligned", valueFormatter: (p) => money(p.value as number), cellClass: "font-mono" },
-      { headerName: "Channel", field: "channel", width: 190, valueFormatter: (p) => channelLabel(p.value as Order["channel"]) },
-      { headerName: "Buyer", flex: 1, minWidth: 140, valueGetter: (p) => p.data?.payer_name || p.data?.payer_email || "—" },
+      { headerName: "Total", field: "total", flex: 0.6, minWidth: 80, type: "rightAligned", valueFormatter: (p) => money(p.value as number), cellClass: "font-mono" },
+      { headerName: "Channel", field: "channel", flex: 1.1, minWidth: 120, valueFormatter: (p) => channelLabel(p.value as Order["channel"]) },
+      { headerName: "Buyer", flex: 0.9, minWidth: 100, valueGetter: (p) => p.data?.payer_name || p.data?.payer_email || "—" },
       {
         headerName: "Status",
         field: "status",
-        width: 180,
+        flex: 1.2,
+        minWidth: 170,
         cellRenderer: (p: ICellRendererParams<Order>) => (p.data ? <OrderStatusChip status={p.data.status} /> : null),
       },
     ],
@@ -105,9 +106,7 @@ export default function OrdersPage() {
                 rowHeight={56}
                 headerHeight={44}
                 animateRows
-                rowSelection="single"
-                autoSizeStrategy={{ type: "fitGridWidth", defaultMinWidth: 90 }}
-                onRowClicked={(e) => setSelectedId(e.data?.id ?? null)}
+                rowSelection="single"                onRowClicked={(e) => setSelectedId(e.data?.id ?? null)}
                 defaultColDef={{ sortable: true, resizable: true }}
                 overlayNoRowsTemplate="<span>No orders in this view.</span>"
               />
